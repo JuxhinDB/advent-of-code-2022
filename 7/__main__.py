@@ -1,3 +1,4 @@
+import sys
 import pprint
 pp = pprint.PrettyPrinter(indent=1)
 
@@ -9,27 +10,29 @@ fs = {
 }
 
 
-def crashdump(ptr=None):
+def crashdump(ptr=None, ctx=None):
     print('\n== CRASHDUMP ==')
     print(f'ptr: {ptr}')
     print(f'ctx: {ctx}')
     print(f'dir: {_dir}')
     print(f'fs: {fs}')
     print('===============')
+    sys.exit(1)
 
 
-def calculate_dir_size(fs: dict, result={}):
-    for dirname, dirlist in fs.items():
-        for dir_ in dirlist:
-            if isinstance(fs[dirname][dir_], int):
-                if result.get(dirname):
-                    result[dirname] += fs[dirname][dir_]
-                else:
-                    result[dirname] = fs[dirname][dir_]
+def calculate_dir_size(fs: dict, parent='/', result={}):
+    for dirname, dirtype in fs.items():
+        current_size = result.get(parent, 0)
 
-            print(f'dirname: {dirname}, {dir_}')
+        match dirtype:
+            case int():
+                result[parent] = current_size + dirtype
+            case dict():
+                result[parent] = current_size + sum(calculate_dir_size(dirtype, parent=f'{parent}/{dirname}').values())
+            case _:
+                sys.exit(1)
 
-    print(f'result: {result}')
+    return result
 
 
 with open('input', 'r') as input_:
@@ -68,5 +71,6 @@ with open('input', 'r') as input_:
 
                 ptr[parts[1]] = int(parts[0])
 
-
-    calculate_dir_size(fs)
+    fssize = calculate_dir_size(fs)
+    pp.pprint(fs)
+    print(f'part 1: {sum([x for x in fssize.values() if x <= 100000])}')
