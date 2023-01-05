@@ -20,7 +20,9 @@ def crashdump(ptr=None, ctx=None):
     sys.exit(1)
 
 
-def calculate_dir_size(fs: dict, parent='/', result={}):
+def calculate_dir_size(fs: dict, parent='/'):
+    result = {}
+
     for dirname, dirtype in fs.items():
         current_size = result.get(parent, 0)
 
@@ -28,7 +30,12 @@ def calculate_dir_size(fs: dict, parent='/', result={}):
             case int():
                 result[parent] = current_size + dirtype
             case dict():
-                result[parent] = current_size + sum(calculate_dir_size(dirtype, parent=f'{parent}/{dirname}').values())
+                new_parent = f'/{dirname}' if parent == '/' else f'{parent}/{dirname}'
+
+                subdir = calculate_dir_size(dirtype, parent=new_parent)
+                result[parent] = current_size + sum(subdir.values())
+
+                result.update(subdir)
             case _:
                 sys.exit(1)
 
@@ -71,6 +78,7 @@ with open('input', 'r') as input_:
 
                 ptr[parts[1]] = int(parts[0])
 
-    fssize = calculate_dir_size(fs)
-    pp.pprint(fs)
+    fssize = calculate_dir_size(fs['/'])
+    pp.pprint(dict(sorted(fssize.items(), key=lambda item: item[1], reverse=True)))
+
     print(f'part 1: {sum([x for x in fssize.values() if x <= 100000])}')
