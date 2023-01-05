@@ -9,6 +9,9 @@ fs = {
     '/': {}
 }
 
+TOTAL_DISK_SPACE    = 70000000
+TARGET_UNUSED_SPACE = 30000000
+
 
 def crashdump(ptr=None, ctx=None):
     print('\n== CRASHDUMP ==')
@@ -21,19 +24,23 @@ def crashdump(ptr=None, ctx=None):
 
 
 def calculate_dir_size(fs: dict, parent='/'):
-    result = {}
+    result = {
+        parent: 0
+    }
 
     for dirname, dirtype in fs.items():
-        current_size = result.get(parent, 0)
-
         match dirtype:
             case int():
-                result[parent] = current_size + dirtype
+                result[parent] += dirtype
             case dict():
                 new_parent = f'/{dirname}' if parent == '/' else f'{parent}/{dirname}'
 
                 subdir = calculate_dir_size(dirtype, parent=new_parent)
-                result[parent] = current_size + sum(subdir.values())
+
+                # Hack to avoid doucandidateble counting file sizes
+                for dirname, dirsize in subdir.items():
+                    if all([name.startswith(dirname) for name in subdir.keys()]):
+                        result[parent] += dirsize
 
                 result.update(subdir)
             case _:
@@ -81,4 +88,13 @@ with open('input', 'r') as input_:
     fssize = calculate_dir_size(fs['/'])
     pp.pprint(dict(sorted(fssize.items(), key=lambda item: item[1], reverse=True)))
 
-    print(f'part 1: {sum([x for x in fssize.values() if x <= 100000])}')
+    print(f'Part 1: {sum([x for x in fssize.values() if x <= 100000])}')
+
+    unused_space = TOTAL_DISK_SPACE - fssize['/']
+    space_to_free = TARGET_UNUSED_SPACE - unused_space
+
+    print(f'The total size of the root is {fssize["/"]} with a target size of {TARGET_UNUSED_SPACE}')
+    print(f'This means that we need to free up {space_to_free}')
+
+    candidate_directories = sorted([(name, size) for (name, size) in fssize.items() if size >= space_to_free], key=lambda item: item[1])
+    print(f'To achieve this we should remove {candidate_directories[0][0]} of size {candidate_directories[0][1]}')
