@@ -1,4 +1,5 @@
 from functools import partial
+from copy import deepcopy
 
 with open('input', 'r') as input_:
     forest = input_.read()[:-1]
@@ -18,7 +19,6 @@ with open('input', 'r') as input_:
                 continue
 
             # Determine the shortest edge
-            # Make max() call happy with empty seqs
             vertical = cols[j][0:i] if (i + 1) <= (height / 2) else cols[j][(i+1):]
             horizontal = r[0:j] if (j + 1) <= (width / 2) else r[(j+1):]
 
@@ -36,7 +36,10 @@ with open('input', 'r') as input_:
             if t > max_ver or t > max_hor:
                 visible_trees.append(t)
 
+                left = deepcopy(left)
                 left.reverse()
+
+                up = deepcopy(up)
                 up.reverse()
 
                 # Calculate scenic scenic score
@@ -44,8 +47,8 @@ with open('input', 'r') as input_:
                     if l >= t:
                         f_ = partial(f_, i + 1)
 
-                for i, r, in enumerate(right):
-                    if r >= t:
+                for i, r_, in enumerate(right):
+                    if r_ >= t:
                         f_ = partial(f_, i + 1)
 
                 for i, u in enumerate(up):
